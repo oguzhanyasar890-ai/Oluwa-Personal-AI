@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Oluwa — Canlı Sohbet</title>
+<title>Sadi — Canlı Sohbet</title>
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:#071a30;color:#eaf2ff;overflow:hidden}
@@ -37,8 +37,8 @@
 <body>
 <div id="app">
   <header>
-    <img src="asistan.jpg" alt="Oluwa">
-    <div><b>Oluwa — Canlı Sohbet</b><small>Emel ses · görüntü/belge · TTS · görsel · video</small></div>
+    <img src="asistan.jpg" alt="Sadi">
+    <div><b>Sadi — Canlı Sohbet</b><small>Emel ses · görüntü/belge · TTS · görsel · video</small></div>
     <span class="dot"></span>
   </header>
   <div id="araclar">
@@ -46,12 +46,15 @@
     <button class="arac" id="btnTts">🔊 TTS (Emel)</button>
     <button class="arac" id="btnGorsel">🎨 Görsel Üret</button>
     <button class="arac" id="btnVideo">🎬 Video Üret</button>
+    <button class="arac" id="btnHatirla">🧠 Şunu Hatırla</button>
+    <button class="arac" id="btnIyi">👍</button>
+    <button class="arac" id="btnKotu">👎</button>
     <input type="file" id="dosya" accept="image/*,.pdf,.doc,.docx,.txt">
   </div>
   <div id="durum">Hazır. Konuşabilir, yazabilir veya bir araç seçebilirsin.</div>
-  <div id="mesajlar"><div class="mesaj bot">Merhaba! Ben Oluwa, kişisel asistanın. Emel sesiyle konuşabilir, belge tarayabilir, ses/görsel/video üretebilirim.</div></div>
+  <div id="mesajlar"><div class="mesaj bot">Merhaba! Ben Sadi, kişisel asistanın. Emel sesiyle konuşabilir, belge tarayabilir, ses/görsel/video üretebilirim.</div></div>
   <div id="alt">
-    <textarea id="girdi" rows="1" placeholder="Oluwa'ya yaz..."></textarea>
+    <textarea id="girdi" rows="1" placeholder="Sadi'ya yaz..."></textarea>
     <button id="gonder" aria-label="Gönder">➤</button>
   </div>
   <button id="canli">CANLI KONUŞMA BAŞLAT</button>
@@ -59,7 +62,7 @@
 <script>
 (function(){
   var PANEL='https://panel.marketim3000.online'; // kisisel API proxy (tek degisim noktasi)
-  var API=PANEL+'/api/oluwa-chat';
+  var API=PANEL+'/api/sadi-chat';
   var kutu=document.getElementById('mesajlar'), girdi=document.getElementById('girdi'),
       gonderBtn=document.getElementById('gonder'), micBtn=document.getElementById('canli'),
       durum=document.getElementById('durum'), dosyaGirdi=document.getElementById('dosya');
@@ -70,22 +73,36 @@
     kutu.appendChild(d); kutu.scrollTop=kutu.scrollHeight; return d;
   }
   function durumYaz(t){ durum.textContent=t; }
-  function gonderLogin(d){ // sadece oturum keyi
-    return d;
+
+  var GECmis='sadi_sohbet_gecmisi_yerel';
+  function kaydet(rol, metin){
+    try{
+      var d=JSON.parse(localStorage.getItem(GECmis)||'[]');
+      d.push({r:rol,m:metin,t:Date.now()});
+      if(d.length>200) d=d.slice(-200);
+      localStorage.setItem(GECmis,JSON.stringify(d));
+    }catch(e){}
   }
+  function geriYukle(){
+    try{
+      var d=JSON.parse(localStorage.getItem(GECmis)||'[]');
+      d.slice(-60).forEach(function(x){ ekle(x.m, x.r==='user'?'kullanici':'bot'); });
+    }catch(e){}
+  }
+  geriYukle();
 
   async function gonder(mesaj, sesli){
     if(!mesaj) return;
-    girdi.value=''; ekle(mesaj,'kullanici');
+    girdi.value=''; ekle(mesaj,'kullanici'); kaydet('user',mesaj);
     gonderBtn.disabled=true;
-    var bekliyor=ekle('Oluwa yazıyor...','bot yaziyor');
-    durumYaz(sesli?'Oluwa yanıtlıyor...':'Yanıt bekleniyor...');
+    var bekliyor=ekle('Sadi yazıyor...','bot yaziyor');
+    durumYaz(sesli?'Sadi yanıtlıyor...':'Yanıt bekleniyor...');
     try{
       var res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mesaj:mesaj})});
       var veri=await res.json();
       bekliyor.classList.remove('yaziyor');
       var cevap=veri.cevap||'Yanıt alınamadı.';
-      bekliyor.textContent=cevap;
+      bekliyor.textContent=cevap; kaydet('bot',cevap);
       if(sesli) emelIleKonus(cevap);
       else durumYaz('Hazır.');
     }catch(e){
@@ -150,7 +167,7 @@
     var f=dosyaGirdi.files[0]; if(!f) return;
     durumYaz('Belge taranıyor...');
     var fd=new FormData(); fd.append('dosya',f); fd.append('soru','Belgeyi detaylı analiz et, özetle ve öne çıkan bilgileri ver.');
-    fetch(PANEL+'/api/oluwa-belge',{method:'POST',body:fd})
+    fetch(PANEL+'/api/sadi-belge',{method:'POST',body:fd})
       .then(function(r){return r.json();})
       .then(function(d){ durumYaz('Hazır.'); ekle('📄 *'+f.name+'* analizi:\n\n'+(d.cevap||d.hata||'Sonuç yok.'),'bot'); })
       .catch(function(e){ durumYaz('Hata: '+e.message); });
@@ -158,9 +175,9 @@
   };
 
   document.getElementById('btnTts').onclick=function(){
-    var metin=girdi.value.trim()||'Merhaba, ben Oluwa, kişisel asistanınızım.';
+    var metin=girdi.value.trim()||'Merhaba, ben Sadi, kişisel asistanınızım.';
     durumYaz('Emel sesiyle MP3 üretiliyor...');
-    fetch(PANEL+'/api/oluwa-tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({metin:metin})})
+    fetch(PANEL+'/api/sadi-tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({metin:metin})})
       .then(function(r){return r.json();})
       .then(function(d){
         durumYaz('Hazır.');
@@ -176,7 +193,7 @@
   document.getElementById('btnGorsel').onclick=function(){
     var prompt=girdi.value.trim()||'Modern dijital kitap kapak tasarımı';
     durumYaz('Görsel üretiliyor... (bu biraz sürebilir)');
-    fetch(PANEL+'/api/oluwa-gorsel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt})})
+    fetch(PANEL+'/api/sadi-gorsel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt})})
       .then(function(r){return r.json();})
       .then(function(d){
         durumYaz('Hazır.');
@@ -191,7 +208,7 @@
   document.getElementById('btnVideo').onclick=function(){
     var prompt=girdi.value.trim()||'Dijital kitap tanıtım videosu';
     durumYaz('Video üretiliyor... (1-2 dakika sürebilir)');
-    fetch(PANEL+'/api/oluwa-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt})})
+    fetch(PANEL+'/api/sadi-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt})})
       .then(function(r){return r.json();})
       .then(function(d){
         durumYaz('Hazır.');
@@ -202,6 +219,25 @@
       })
       .catch(function(e){ durumYaz('Hata: '+e.message); });
   };
+
+  document.getElementById('btnHatirla').onclick=function(){
+    var metin=girdi.value.trim(); if(!metin){ durumYaz('Hatırlanacak şeyi yazın.'); return; }
+    fetch(PANEL+'/api/sadi-hatirla',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({metin:metin})})
+      .then(function(r){return r.json();})
+      .then(function(d){ durumYaz(d.mesaj||'Kaydedildi.'); ekle('🧠 '+(d.mesaj||metin),'bot'); girdi.value=''; })
+      .catch(function(e){ durumYaz('Hata: '+e.message); });
+  };
+
+  function geriBildir(tur){
+    var son=kutu.querySelector('.bot:last-of-type');
+    var mesaj=son?son.textContent.slice(0,500):'';
+    fetch(PANEL+'/api/sadi-geribildirim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tur:tur,mesaj:mesaj})})
+      .then(function(r){return r.json();})
+      .then(function(d){ durumYaz(d.mesaj||'Teşekkürler.'); })
+      .catch(function(e){ durumYaz('Hata: '+e.message); });
+  }
+  document.getElementById('btnIyi').onclick=function(){geriBildir('olumlu');};
+  document.getElementById('btnKotu').onclick=function(){geriBildir('olumsuz');};
 
   girdi.focus();
 })();
